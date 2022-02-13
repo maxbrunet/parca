@@ -121,7 +121,7 @@ func (t *Table) Insert(rows []Row) error {
 			return err
 		}
 
-		// TODO check if granule pruned; if so, follow new granule links
+		// TODO(THOR: compactor) check if granule pruned; if so, follow new granule links
 		granule.AddPart(p)
 		if granule.Cardinality() >= t.schema.GranuleSize {
 			// Schedule the granule for compaction
@@ -152,7 +152,7 @@ func (t *Table) splitGranule(granule *Granule) {
 	tx, commit := t.db.begin()
 	defer commit()
 
-	// TODO: There's a bug here, we need to copy non-completed tx writes from this Granule into the new ones.
+	// TODO(THOR: compactor) There's a bug here, we need to copy non-completed tx writes from this Granule into the new ones.
 	newpart, err := Merge(tx, t.db.txCompleted, &t.schema, granule.parts...) // need to merge all parts in a granule before splitting
 	if err != nil {
 		level.Error(t.logger).Log("msg", "failed to merge parts", "error", err)
