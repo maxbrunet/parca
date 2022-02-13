@@ -507,20 +507,25 @@ func benchmarkTableInserts(b *testing.B, rows, writers int) {
 		return rows
 	}
 
+	// Pre-generate all rows we're inserting
+	inserts := make([][]Row, writers)
+	for i := 0; i < writers; i++ {
+		inserts[i] = generateRows(rows)
+	}
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		// Spawn n workers that will insert values into the table
 		wg := &sync.WaitGroup{}
-		for i := 0; i < writers; i++ {
+		for j := 0; j < writers; j++ {
 			wg.Add(1)
-			go func() {
+			go func(index int) {
 				defer wg.Done()
-				r := generateRows(rows)
-				if err := table.Insert(r); err != nil {
+				if err := table.Insert(inserts[index]); err != nil {
 					fmt.Println("Received error on insert: ", err)
 				}
-			}()
+			}(j)
 		}
 		wg.Wait()
 	}
