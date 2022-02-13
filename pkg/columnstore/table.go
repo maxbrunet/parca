@@ -125,6 +125,13 @@ func (t *Table) Insert(rows []Row) error {
 	return nil
 }
 
+// splitGranule is the main function of the compactor. It will merge all the parts from completed tx's in a Granule (which sorts all rows), and then split that Granule into new Granules.
+// It will create a copy of the sparse index, delete the old granule from that index, and insert the new Granules into the new copy of the index. After these steps, it will swap the pointer
+// of the old index with the new one.
+// The deleted Granule will be marked as purged, and pointers to the newly create Granules will be added to the old Granule. This is important because there may be read or write actions that are
+// waiting on the Granule lock while this split is happening. Upon obtaining the lock a read operation will continue as normal reading the old Granule and index. A write operation that obtains the lock
+// of a granule markes as purged will duplicate it's writes both to the old granule, as well as the new granule. This will ensure that reads that are still pending, will be able to find data that should
+// have existed in the old granule.
 func (t *Table) splitGranule(granule *Granule) {
 	granule.Lock()
 	defer granule.Unlock()
