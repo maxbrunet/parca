@@ -22,7 +22,6 @@ type Table struct {
 
 	schema Schema
 	index  *btree.BTree
-	sync.RWMutex
 
 	// compactor settings
 	work chan *Granule
@@ -106,8 +105,6 @@ func (t *Table) Insert(rows []Row) error {
 		return nil
 	}
 
-	t.RLock()
-	defer t.RUnlock()
 	tx, commit := t.db.begin()
 	defer commit()
 
@@ -129,8 +126,6 @@ func (t *Table) Insert(rows []Row) error {
 }
 
 func (t *Table) splitGranule(granule *Granule) {
-	t.Lock()
-	defer t.Unlock()
 	granule.Lock()
 	defer granule.Unlock()
 
