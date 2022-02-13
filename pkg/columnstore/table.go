@@ -3,6 +3,8 @@ package columnstore
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
+	"unsafe"
 
 	"github.com/apache/arrow/go/v7/arrow"
 	"github.com/apache/arrow/go/v7/arrow/memory"
@@ -79,8 +81,6 @@ func newTable(
 		Name: "index_size",
 		Help: "Number of granules in the table index currently.",
 	}, func() float64 {
-		t.RLock()
-		defer t.RUnlock()
 		return float64(t.index.Len())
 	})
 
@@ -115,6 +115,7 @@ func (t *Table) Insert(rows []Row) error {
 			return err
 		}
 
+		// TODO check if granule pruned; if so, follow new granule links
 		granule.AddPart(p)
 		if granule.Cardinality() >= t.schema.GranuleSize {
 			// Schedule the granule for compaction
@@ -131,7 +132,7 @@ func (t *Table) Insert(rows []Row) error {
 // The deleted Granule will be marked as purged, and pointers to the newly create Granules will be added to the old Granule. This is important because there may be read or write actions that are
 // waiting on the Granule lock while this split is happening. Upon obtaining the lock a read operation will continue as normal reading the old Granule and index. A write operation that obtains the lock
 // of a granule markes as purged will duplicate it's writes both to the old granule, as well as the new granule. This will ensure that reads that are still pending, will be able to find data that should
-// have existed in the old granule.
+// have existed in the old granule since a merge is destructive of tx ids.
 func (t *Table) splitGranule(granule *Granule) {
 	granule.Lock()
 	defer granule.Unlock()
@@ -141,14 +142,11 @@ func (t *Table) splitGranule(granule *Granule) {
 		return
 	}
 
-	// NOTE: since splitGranule is currently a stop-the-world operation, and we have an exclusive write lock on the table,
-	// we know that any future accesses to these parts will have a higher transaction than the tx value we obtain here.
-	// So we can overwrite the tx value with our new one. This approach will stop working when splits/merges are a concurrent operation
-	// and will require moving to a model that duplicates the table index. At this time that's an early optimization, so we're going with this approach until
-	// such a time that stop the world becomes untenable.
+	// Get a new tx id for this merge/split operation
 	tx, commit := t.db.begin()
 	defer commit()
 
+	// TODO: There's a bug here, we need to copy non-completed tx writes from this Granule into the new ones.
 	newpart, err := Merge(tx, t.db.txCompleted, &t.schema, granule.parts...) // need to merge all parts in a granule before splitting
 	if err != nil {
 		level.Error(t.logger).Log("msg", "failed to merge parts", "error", err)
@@ -160,23 +158,29 @@ func (t *Table) splitGranule(granule *Granule) {
 		level.Error(t.logger).Log("msg", "granule split failed after add part", "error", err)
 	}
 
-	deleted := t.index.Delete(granule)
+	// Clone the index
+	index := t.index.Clone()
+
+	deleted := index.Delete(granule)
 	if deleted == nil {
 		level.Error(t.logger).Log("msg", "failed to delete granule during split")
 	}
 
 	// mark this granule as having been pruned
+	// Add the new granules into the old one for pending reads/writes
 	granule.pruned = true
+	granule.newGranules = granules
 
 	for _, g := range granules {
-		t.index.ReplaceOrInsert(g)
+		index.ReplaceOrInsert(g)
 	}
+
+	// Point to the new index
+	atomic.SwapPointer((*unsafe.Pointer)(unsafe.Pointer(&t.index)), unsafe.Pointer(index))
 }
 
 // Iterator iterates in order over all granules in the table. It stops iterating when the iterator function returns false.
 func (t *Table) Iterator(pool memory.Allocator, iterator func(r arrow.Record) error) error {
-	t.RLock()
-	defer t.RUnlock()
 	tx := t.db.beginRead()
 
 	var err error

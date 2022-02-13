@@ -24,6 +24,8 @@ type Granule struct {
 
 	// pruned indicates if this Granule is longer found in the index
 	pruned bool
+	// newGranules points to the new Granules created from this granule when it has been pruned
+	newGranules []*Granule
 }
 
 func NewGranule(granulesCreated prometheus.Counter, schema *Schema, parts ...*Part) *Granule {
