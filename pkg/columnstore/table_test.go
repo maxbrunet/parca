@@ -460,6 +460,14 @@ func Test_Table_Concurrency(t *testing.T) {
 }
 
 func Benchmark_Table_Insert_10Rows_10Writers(b *testing.B) {
+	benchmarkTableInserts(b, 10, 10)
+}
+
+func Benchmark_Table_Insert_10000Rows_100Writers(b *testing.B) {
+	benchmarkTableInserts(b, 10000, 100)
+}
+
+func benchmarkTableInserts(b *testing.B, rows, writers int) {
 	schema := Schema{
 		Columns: []ColumnDefinition{{
 			Name:     "labels",
@@ -503,13 +511,12 @@ func Benchmark_Table_Insert_10Rows_10Writers(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// Spawn n workers that will insert values into the table
-		n := 10
 		wg := &sync.WaitGroup{}
-		for i := 0; i < n; i++ {
+		for i := 0; i < writers; i++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				r := generateRows(10)
+				r := generateRows(rows)
 				if err := table.Insert(r); err != nil {
 					fmt.Println("Received error on insert: ", err)
 				}
