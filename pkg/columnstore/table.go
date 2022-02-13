@@ -22,8 +22,10 @@ type Table struct {
 
 	schema Schema
 	index  *btree.BTree
-
 	sync.RWMutex
+
+	// compactor settings
+	work chan *Granule
 	sync.WaitGroup
 }
 
@@ -71,6 +73,7 @@ func newTable(
 				Buckets: prometheus.ExponentialBuckets(1, 2, 10),
 			}),
 		},
+		work: make(chan *Granule, 1024), // TODO buffered or unbuffered? expose as setting if buffered
 	}
 
 	promauto.With(reg).NewGaugeFunc(prometheus.GaugeOpts{
@@ -85,15 +88,11 @@ func newTable(
 	g := NewGranule(t.metrics.granulesCreated, &t.schema, []*Part{}...)
 	t.index.ReplaceOrInsert(g)
 
-	return t
-}
+	// Start the background compactor go routine
+	t.Add(1)
+	go t.compactor()
 
-// Sync the table. This will return once all split operations have completed.
-// Currently it does not prevent new inserts from happening, so this is only
-// safe to rely on if you control all writers. In the future we may need to add a way to
-// block new writes as well.
-func (t *Table) Sync() {
-	t.Wait()
+	return t
 }
 
 func (t *Table) Insert(rows []Row) error {
@@ -121,8 +120,8 @@ func (t *Table) Insert(rows []Row) error {
 
 		granule.AddPart(p)
 		if granule.Cardinality() >= t.schema.GranuleSize {
-			t.Add(1)
-			go t.splitGranule(granule) // TODO there may be a better way to schedule this
+			// Schedule the granule for compaction
+			t.work <- granule
 		}
 	}
 
@@ -130,7 +129,6 @@ func (t *Table) Insert(rows []Row) error {
 }
 
 func (t *Table) splitGranule(granule *Granule) {
-	defer t.Done()
 	t.Lock()
 	defer t.Unlock()
 	granule.Lock()
@@ -241,4 +239,12 @@ func (t *Table) splitRowsByGranule(rows []Row) map[*Granule][]Row {
 	}
 
 	return rowsByGranule
+}
+
+// compactor is the background routine responsible for compacting and splitting granules. Only one compactor should ever be running at a time.
+func (t *Table) compactor() {
+	defer t.Done()
+	for granule := range t.work {
+		t.splitGranule(granule)
+	}
 }

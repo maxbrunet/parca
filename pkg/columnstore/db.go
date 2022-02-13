@@ -115,7 +115,8 @@ func (db *DB) begin() (uint64, func()) {
 	}
 }
 
-// txCompleted returns true if a write transaction has been completed
+// txCompleted returns the tx completiong id of the transaction
+// it returns MaxUint64 if the tx has not completed yet
 func (db *DB) txCompleted(tx uint64) uint64 {
 	db.txmtx.RLock()
 	defer db.txmtx.RUnlock()

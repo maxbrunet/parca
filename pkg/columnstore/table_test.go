@@ -257,8 +257,9 @@ func Test_Table_GranuleSplit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Wait for the index to be updated by the asynchronous granule split.
-	table.Sync()
+	// Close the work channel for the compactor
+	close(table.work)
+	table.Wait()
 
 	table.Iterator(memory.NewGoAllocator(), func(r arrow.Record) error {
 		defer r.Release()
@@ -370,7 +371,8 @@ func Test_Table_InsertLowest(t *testing.T) {
 	}
 
 	// Wait for the index to be updated by the asynchronous granule split.
-	table.Sync()
+	close(table.work)
+	table.Wait()
 
 	require.Equal(t, 2, table.index.Len())
 	require.Equal(t, 2, table.index.Min().(*Granule).Cardinality()) // [10,11]
