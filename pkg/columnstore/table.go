@@ -81,7 +81,7 @@ func newTable(
 		Name: "index_size",
 		Help: "Number of granules in the table index currently.",
 	}, func() float64 {
-		return float64(t.index.Len())
+		return float64(t.Index().Len())
 	})
 
 	g := NewGranule(t.metrics.granulesCreated, &t.schema, []*Part{}...)
@@ -92,6 +92,12 @@ func newTable(
 	go t.compactor()
 
 	return t
+}
+
+// Index provides atomic access to the table index
+func (t *Table) Index() *btree.BTree {
+	ptr := atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&t.index)))
+	return (*btree.BTree)(ptr)
 }
 
 func (t *Table) Insert(rows []Row) error {
@@ -198,7 +204,7 @@ func (t *Table) Iterator(pool memory.Allocator, iterator func(r arrow.Record) er
 }
 
 func (t *Table) granuleIterator(iterator func(g *Granule) bool) {
-	t.index.Ascend(func(i btree.Item) bool {
+	t.Index().Ascend(func(i btree.Item) bool {
 		g := i.(*Granule)
 		return iterator(g)
 	})
@@ -206,17 +212,18 @@ func (t *Table) granuleIterator(iterator func(g *Granule) bool) {
 
 func (t *Table) splitRowsByGranule(rows []Row) map[*Granule][]Row {
 	rowsByGranule := map[*Granule][]Row{}
+	index := t.Index()
 
 	// Special case: if there is only one granule, insert parts into it until full.
-	if t.index.Len() == 1 {
-		rowsByGranule[t.index.Min().(*Granule)] = rows
+	if index.Len() == 1 {
+		rowsByGranule[index.Min().(*Granule)] = rows
 		return rowsByGranule
 	}
 
 	// TODO: we might be able to do ascend less than or ascend greater than here?
 	j := 0
 	var prev *Granule
-	t.index.Ascend(func(i btree.Item) bool {
+	index.Ascend(func(i btree.Item) bool {
 		g := i.(*Granule)
 		g.RLock()
 		defer g.RUnlock()
