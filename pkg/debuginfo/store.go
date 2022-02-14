@@ -125,7 +125,7 @@ func newCache(cacheCfg []byte) (*FilesystemCacheConfig, error) {
 	}
 
 	if _, err := os.Stat(c.Directory); os.IsNotExist(err) {
-		err := os.MkdirAll(c.Directory, 0700)
+		err := os.MkdirAll(c.Directory, 0o700)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +134,7 @@ func newCache(cacheCfg []byte) (*FilesystemCacheConfig, error) {
 }
 
 func (s *Store) Exists(ctx context.Context, req *debuginfopb.ExistsRequest) (*debuginfopb.ExistsResponse, error) {
-	err := validateId(req.BuildId)
+	err := validateID(req.BuildId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -165,7 +165,7 @@ func (s *Store) Upload(stream debuginfopb.DebugInfoService_UploadServer) error {
 	}
 
 	buildId := req.GetInfo().BuildId
-	err = validateId(buildId)
+	err = validateID(buildId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -185,7 +185,7 @@ func (s *Store) Upload(stream debuginfopb.DebugInfoService_UploadServer) error {
 	})
 }
 
-func validateId(id string) error {
+func validateID(id string) error {
 	_, err := hex.DecodeString(id)
 	if err != nil {
 		return fmt.Errorf("failed to validate id: %w", err)
@@ -243,14 +243,13 @@ func (s *Store) fetchObjectFile(ctx context.Context, buildID string) (string, er
 
 		_, err = io.Copy(tmpfile, r)
 		if err != nil {
-
 			return "", fmt.Errorf("copy object storage file to local temp file: %w", err)
 		}
 		if err := tmpfile.Close(); err != nil {
 			return "", fmt.Errorf("close tempfile to write object file: %w", err)
 		}
 
-		err = os.MkdirAll(path.Join(s.cacheDir, buildID), 0700)
+		err = os.MkdirAll(path.Join(s.cacheDir, buildID), 0o700)
 		if err != nil {
 			return "", fmt.Errorf("create object file directory: %w", err)
 		}

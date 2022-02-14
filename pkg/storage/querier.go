@@ -132,7 +132,7 @@ func PostingsForMatchers(ix IndexReader, ms ...*labels.Matcher) (*sroar.Bitmap, 
 	}
 
 	// If there's nothing to subtract from, add in everything and remove the noBitmap later.
-	//if bitmap.IsEmpty() && !noBitmap.IsEmpty() {
+	// if bitmap.IsEmpty() && !noBitmap.IsEmpty() {
 	if bitmap.GetCardinality() == 0 && noBitmap.GetCardinality() != 0 {
 		allPostings, err := ix.Postings(index.AllPostingsKey())
 		if err != nil {

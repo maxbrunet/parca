@@ -38,7 +38,7 @@ const (
 	pprofBlockTotal        string = "block_total"
 	pprofGoroutineTotal    string = "goroutine_total"
 	pprofMutexTotal        string = "mutex_total"
-	pprofProcessCpu        string = "process_cpu"
+	pprofProcessCPU        string = "process_cpu"
 	pprofThreadcreateTotal string = "threadcreate_total"
 )
 
@@ -83,7 +83,7 @@ func DefaultScrapeConfig() ScrapeConfig {
 					Enabled: trueValue(),
 					Path:    "/debug/pprof/mutex",
 				},
-				pprofProcessCpu: &PprofProfilingConfig{
+				pprofProcessCPU: &PprofProfilingConfig{
 					Enabled: trueValue(),
 					Delta:   true,
 					Path:    "/debug/pprof/profile",
@@ -244,9 +244,9 @@ func (c *ScrapeConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if c.ScrapeTimeout == 0 {
 		c.ScrapeTimeout = c.ScrapeInterval
 	}
-	if cfg, ok := c.ProfilingConfig.PprofConfig[pprofProcessCpu]; ok {
+	if cfg, ok := c.ProfilingConfig.PprofConfig[pprofProcessCPU]; ok {
 		if *cfg.Enabled && c.ScrapeTimeout < model.Duration(time.Second*2) {
-			return fmt.Errorf("%v scrape_timeout must be at least 2 seconds in %v", pprofProcessCpu, c.JobName)
+			return fmt.Errorf("%v scrape_timeout must be at least 2 seconds in %v", pprofProcessCPU, c.JobName)
 		}
 	}
 

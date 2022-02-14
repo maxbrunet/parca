@@ -415,10 +415,10 @@ func Test_Query_Simple(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	//out, err := proto.Marshal(resp)
-	//require.NoError(t, err)
-	//err = ioutil.WriteFile("../../ui/packages/shared/profile/src/testdata/fg-simple.pb", out, 0644)
-	//require.NoError(t, err)
+	// out, err := proto.Marshal(resp)
+	// require.NoError(t, err)
+	// err = ioutil.WriteFile("../../ui/packages/shared/profile/src/testdata/fg-simple.pb", out, 0644)
+	// require.NoError(t, err)
 }
 
 func Test_Query_Diff(t *testing.T) {

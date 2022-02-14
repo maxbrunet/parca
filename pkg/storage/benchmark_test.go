@@ -165,9 +165,9 @@ func BenchmarkIterator(b *testing.B) {
 		require.NoError(b, err)
 	}
 
-	//1614253659535 - 130th sample
-	//1614255868920 - 400th sample
-	//1614262838920 - 1250th sample
+	// 1614253659535 - 130th sample
+	// 1614255868920 - 400th sample
+	// 1614262838920 - 1250th sample
 
 	var q storage.Querier
 	if b.N == 1 {

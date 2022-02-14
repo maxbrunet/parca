@@ -27,9 +27,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var (
-	ErrOutOfOrderSample = errors.New("out of order sample")
-)
+var ErrOutOfOrderSample = errors.New("out of order sample")
 
 type MemSeries struct {
 	id   uint64

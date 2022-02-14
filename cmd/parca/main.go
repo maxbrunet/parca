@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	version string = "dev"
-	commit  string = "dev"
+	version = "dev"
+	commit  = "dev"
 )
 
 func main() {
@@ -54,7 +54,6 @@ func main() {
 	registry := prometheus.NewRegistry()
 
 	err := parca.Run(ctx, logger, registry, flags, version)
-
 	if err != nil {
 		level.Error(logger).Log("msg", "Program exited with error", "err", err)
 		os.Exit(1)

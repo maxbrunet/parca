@@ -222,7 +222,6 @@ func LabelsByProfiles(lset labels.Labels, c *config.ProfilingConfig) []labels.La
 	}
 
 	return res
-
 }
 
 // Targets is a sortable list of targets.

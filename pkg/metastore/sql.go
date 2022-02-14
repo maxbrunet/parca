@@ -267,8 +267,7 @@ const (
 func buildLocationsByIDsQuery(ids []uuid.UUID) string {
 	idLen := 36 // each serialized uuid is this length
 
-	totalLen :=
-		// Add the start of the query.
+	totalLen := // Add the start of the query.
 		len(locsByIDsQueryStart) +
 			// The max value is known, and invididual string can be larger than it.
 			len(ids)*idLen +
@@ -279,8 +278,7 @@ func buildLocationsByIDsQuery(ids []uuid.UUID) string {
 
 	lastIndex := len(ids) - 1
 	for i := range ids {
-		offset :=
-			// Add the start of the query.
+		offset := // Add the start of the query.
 			len(locsByIDsQueryStart) - 1 +
 				// The max value is known, and invididual string can be larger than it.
 				i*idLen +
@@ -479,8 +477,7 @@ const (
 func buildLinesByLocationIDsQuery(ids []uuid.UUID) string {
 	idLen := 36 // Any uuid has this length as a string
 
-	totalLen :=
-		// Add the start of the query.
+	totalLen := // Add the start of the query.
 		len(linesByLocationsIDsQueryStart) +
 			// The max value is known, and invididual string can be larger than it.
 			len(ids)*idLen +
@@ -492,8 +489,7 @@ func buildLinesByLocationIDsQuery(ids []uuid.UUID) string {
 
 	lastIndex := len(ids) - 1
 	for i := range ids {
-		offset :=
-			// Add the start of the query.
+		offset := // Add the start of the query.
 			len(linesByLocationsIDsQueryStart) - 1 +
 				// The max value is known, and invididual string can be larger than it.
 				i*idLen +
@@ -578,9 +574,7 @@ func (s *sqlMetaStore) GetFunctionsByIDs(ctx context.Context, ids ...[]byte) (ma
 
 	retrievedFunctions := make(map[string]*pb.Function, len(ids))
 	for rows.Next() {
-		var (
-			fId string
-		)
+		var fId string
 		f := &pb.Function{}
 		err := rows.Scan(
 			&fId, &f.Name, &f.SystemName, &f.Filename, &f.StartLine,
@@ -795,9 +789,7 @@ func (s *sqlMetaStore) GetSymbolizableLocations(ctx context.Context) ([]*pb.Loca
 }
 
 func (s *sqlMetaStore) GetFunctionByKey(ctx context.Context, fkey *pb.Function) (*pb.Function, error) {
-	var (
-		id string
-	)
+	var id string
 
 	k := MakeSQLFunctionKey(fkey)
 

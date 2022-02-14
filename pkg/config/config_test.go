@@ -106,7 +106,6 @@ scrape_configs:
 }
 
 func Test_Config_Validation(t *testing.T) {
-
 	tests := map[string]struct {
 		cfg Config
 	}{

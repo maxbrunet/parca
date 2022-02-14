@@ -246,7 +246,6 @@ func (m *Manager) TargetsAll() map[string][]*Target {
 	targets := make(map[string][]*Target, len(m.scrapePools))
 	for tset, sp := range m.scrapePools {
 		targets[tset] = append(sp.ActiveTargets(), sp.DroppedTargets()...)
-
 	}
 	return targets
 }

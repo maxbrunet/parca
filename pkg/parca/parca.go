@@ -110,7 +110,7 @@ func Run(ctx context.Context, logger log.Logger, reg *prometheus.Registry, flags
 		mStr, err = metastore.NewInMemorySQLiteProfileMetaStore(
 			reg,
 			// Produces high cardinality traces - uncomment locally if needed.
-			//tracerProvider.Tracer("inmemory-sqlite"),
+			// tracerProvider.Tracer("inmemory-sqlite"),
 			trace.NewNoopTracerProvider().Tracer("inmemory-sqlite"),
 		)
 		if err != nil {
